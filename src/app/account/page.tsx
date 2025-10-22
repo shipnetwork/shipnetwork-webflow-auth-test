@@ -1,3 +1,5 @@
+"use client"
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
@@ -10,8 +12,100 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { getMemberstack } from "@/lib/memberstack"
+import { useEffect, useState } from "react"
 
 export default function AccountPage() {
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  useEffect(() => {
+    async function loadMemberData() {
+      try {
+        const memberstack = await getMemberstack()
+        const { data: member } = await memberstack.getCurrentMember()
+
+        if (member) {
+          setEmail(member.auth?.email || "")
+          setFirstName(member.customFields?.["first-name"] || "")
+          setLastName(member.customFields?.["last-name"] || "")
+        }
+      } catch (error) {
+        setMessage({ type: "error", text: "Failed to load profile data" })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadMemberData()
+  }, [])
+
+  async function handleProfileSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setIsSaving(true)
+    setMessage(null)
+
+    try {
+      const memberstack = await getMemberstack()
+
+      // Update custom fields
+      await memberstack.updateMember({
+        customFields: {
+          "first-name": firstName,
+          "last-name": lastName,
+        },
+      })
+
+      // Update email if changed
+      const { data: currentMember } = await memberstack.getCurrentMember()
+      if (currentMember?.auth?.email !== email) {
+        await memberstack.updateMemberAuth({ email })
+      }
+
+      setMessage({ type: "success", text: "Profile updated successfully!" })
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Failed to update profile. Please try again." })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setIsSaving(true)
+    setMessage(null)
+
+    try {
+      const memberstack = await getMemberstack()
+
+      await memberstack.updateMemberAuth({
+        oldPassword: currentPassword,
+        newPassword: newPassword,
+      })
+
+      setMessage({ type: "success", text: "Password updated successfully!" })
+      setCurrentPassword("")
+      setNewPassword("")
+    } catch (error: any) {
+      // Handle authentication errors gracefully without console.error
+      const errorMessage = error.message || error.code || "Failed to update password"
+      setMessage({
+        type: "error",
+        text: errorMessage.includes("password") || errorMessage.includes("auth")
+          ? "Current password is incorrect"
+          : "Failed to update password. Please try again."
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar variant="inset" />
@@ -26,6 +120,18 @@ export default function AccountPage() {
               </p>
             </div>
 
+            {message && (
+              <div
+                className={`rounded-lg p-4 ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-100"
+                    : "bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-100"
+                }`}
+              >
+                {message.text}
+              </div>
+            )}
+
             <Tabs defaultValue="account" className="w-full">
               <TabsList>
                 <TabsTrigger value="account">Account</TabsTrigger>
@@ -34,14 +140,16 @@ export default function AccountPage() {
 
               <TabsContent value="account" className="space-y-4">
                 <div className="rounded-lg border p-6">
-                  <form className="space-y-6">
+                  <form onSubmit={handleProfileSubmit} className="space-y-6">
                     <div className="space-y-4">
                       <div className="grid gap-2">
                         <Label htmlFor="firstName">First Name</Label>
                         <Input
                           id="firstName"
                           placeholder="Enter your first name"
-                          defaultValue=""
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          disabled={isLoading || isSaving}
                         />
                       </div>
 
@@ -50,7 +158,9 @@ export default function AccountPage() {
                         <Input
                           id="lastName"
                           placeholder="Enter your last name"
-                          defaultValue=""
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          disabled={isLoading || isSaving}
                         />
                       </div>
 
@@ -60,19 +170,23 @@ export default function AccountPage() {
                           id="email"
                           type="email"
                           placeholder="Enter your email"
-                          defaultValue=""
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={isLoading || isSaving}
                         />
                       </div>
                     </div>
 
-                    <Button type="submit">Save Changes</Button>
+                    <Button type="submit" disabled={isLoading || isSaving}>
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
                   </form>
                 </div>
               </TabsContent>
 
               <TabsContent value="security" className="space-y-4">
                 <div className="rounded-lg border p-6">
-                  <form className="space-y-6">
+                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
                     <div className="space-y-4">
                       <div className="grid gap-2">
                         <Label htmlFor="currentPassword">Current Password</Label>
@@ -80,6 +194,10 @@ export default function AccountPage() {
                           id="currentPassword"
                           type="password"
                           placeholder="Enter your current password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          disabled={isSaving}
+                          required
                         />
                       </div>
 
@@ -89,11 +207,17 @@ export default function AccountPage() {
                           id="newPassword"
                           type="password"
                           placeholder="Enter your new password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          disabled={isSaving}
+                          required
                         />
                       </div>
                     </div>
 
-                    <Button type="submit">Save Password</Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving ? "Saving..." : "Save Password"}
+                    </Button>
                   </form>
                 </div>
               </TabsContent>

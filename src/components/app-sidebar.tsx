@@ -32,13 +32,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getMemberstack } from "@/lib/memberstack"
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -151,6 +147,37 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [user, setUser] = React.useState({
+    name: "",
+    email: "",
+    avatar: "",
+  })
+
+  React.useEffect(() => {
+    async function loadMemberData() {
+      try {
+        const memberstack = await getMemberstack()
+        const { data: member } = await memberstack.getCurrentMember()
+
+        if (member) {
+          const firstName = member.customFields?.["first-name"] || ""
+          const lastName = member.customFields?.["last-name"] || ""
+          const fullName = [firstName, lastName].filter(Boolean).join(" ") || member.auth?.email || "User"
+
+          setUser({
+            name: fullName,
+            email: member.auth?.email || "",
+            avatar: member.profileImage || "",
+          })
+        }
+      } catch (error) {
+        // Silently handle errors - user data will remain empty
+      }
+    }
+
+    loadMemberData()
+  }, [])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -174,7 +201,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )
