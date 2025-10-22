@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { DevLinkProvider } from "@/devlink/DevLinkProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,11 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
       >
-        <DevLinkProvider>
-          {/* Add here any Navbar or Header you want to be present on all pages */}
-          {children}
-          {/* Add here any Footer you want to be present on all pages */}
-        </DevLinkProvider>
+        {children}
       </body>
     </html>
   );

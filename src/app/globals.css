@@ -1,8 +1,5 @@
-/* If you want tailwind 'base' styles to override 'webflow' styles, re-order the layers */
-@layer properties, theme, base, webflow, components, utilities;
+@layer properties, theme, base, components, utilities;
 
-/* Webflow global styles are imported in the 'webflow' layer */
-@import "../devlink/global.css" layer(webflow);
 @import "tailwindcss";
 @import "tw-animate-css";
 
