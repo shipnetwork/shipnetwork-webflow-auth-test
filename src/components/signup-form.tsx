@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -139,10 +140,9 @@ export function SignupForm({
       </div>
       <div className="text-center text-sm">
         Already have an account?{" "}
-        {/* Note: Using /app/login because just /login will 404 */}
-        <a href="/app/login" className="underline underline-offset-4">
+        <Link href="/login" className="underline underline-offset-4">
           Login
-        </a>
+        </Link>
       </div>
     </form>
   )

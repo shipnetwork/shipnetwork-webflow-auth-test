@@ -14,7 +14,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname()
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/signup"]
+  const publicRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"]
   const isPublicRoute = publicRoutes.includes(pathname)
 
   useEffect(() => {

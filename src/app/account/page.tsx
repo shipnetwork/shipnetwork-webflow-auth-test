@@ -21,6 +21,8 @@ export default function AccountPage() {
   const [email, setEmail] = useState("")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
+  const [hasPassword, setHasPassword] = useState(true)
+  const [authProviders, setAuthProviders] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -35,6 +37,8 @@ export default function AccountPage() {
           setEmail(member.auth?.email || "")
           setFirstName(member.customFields?.["first-name"] || "")
           setLastName(member.customFields?.["last-name"] || "")
+          setHasPassword(member.auth?.hasPassword || false)
+          setAuthProviders(member.auth?.providers || [])
         }
       } catch (error) {
         setMessage({ type: "error", text: "Failed to load profile data" })
@@ -62,10 +66,12 @@ export default function AccountPage() {
         },
       })
 
-      // Update email if changed
-      const { data: currentMember } = await memberstack.getCurrentMember()
-      if (currentMember?.auth?.email !== email) {
-        await memberstack.updateMemberAuth({ email })
+      // Update email if changed (only if not using social login)
+      if (authProviders.length === 0) {
+        const { data: currentMember } = await memberstack.getCurrentMember()
+        if (currentMember?.auth?.email !== email) {
+          await memberstack.updateMemberAuth({ email })
+        }
       }
 
       setMessage({ type: "success", text: "Profile updated successfully!" })
@@ -84,12 +90,22 @@ export default function AccountPage() {
     try {
       const memberstack = await getMemberstack()
 
-      await memberstack.updateMemberAuth({
-        oldPassword: currentPassword,
-        newPassword: newPassword,
-      })
+      if (hasPassword) {
+        // User has existing password - require current password
+        await memberstack.updateMemberAuth({
+          oldPassword: currentPassword,
+          newPassword: newPassword,
+        })
+        setMessage({ type: "success", text: "Password updated successfully!" })
+      } else {
+        // OAuth user creating their first password
+        await memberstack.updateMemberAuth({
+          newPassword: newPassword,
+        })
+        setMessage({ type: "success", text: "Password created successfully! You can now log in with email and password." })
+        setHasPassword(true) // Update state to reflect they now have a password
+      }
 
-      setMessage({ type: "success", text: "Password updated successfully!" })
       setCurrentPassword("")
       setNewPassword("")
     } catch (error: any) {
@@ -172,8 +188,13 @@ export default function AccountPage() {
                           placeholder="Enter your email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          disabled={isLoading || isSaving}
+                          disabled={isLoading || isSaving || authProviders.length > 0}
                         />
+                        {authProviders.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Email is managed by your social login provider and cannot be changed here
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -186,39 +207,75 @@ export default function AccountPage() {
 
               <TabsContent value="security" className="space-y-4">
                 <div className="rounded-lg border p-6">
-                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                  {!hasPassword && authProviders.length > 0 ? (
                     <div className="space-y-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="currentPassword">Current Password</Label>
-                        <Input
-                          id="currentPassword"
-                          type="password"
-                          placeholder="Enter your current password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          disabled={isSaving}
-                          required
-                        />
+                      <div className="mb-4">
+                        <h3 className="text-lg font-medium">Social Login</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You signed in with a social provider
+                        </p>
                       </div>
-
-                      <div className="grid gap-2">
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          type="password"
-                          placeholder="Enter your new password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          disabled={isSaving}
-                          required
-                        />
+                      <div className="rounded-lg bg-muted p-4">
+                        <p className="text-sm">
+                          You're using a social provider to sign in. Your password is managed by your social login provider, so you cannot change it here.
+                        </p>
+                        <p className="text-sm mt-2 text-muted-foreground">
+                          To manage your password, please visit your social provider's account settings.
+                        </p>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="mb-4">
+                        <h3 className="text-lg font-medium">
+                          {hasPassword ? "Change Password" : "Create Password"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {hasPassword
+                            ? "Update your password to keep your account secure"
+                            : "Create a password to secure your account"}
+                        </p>
+                      </div>
 
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save Password"}
-                    </Button>
-                  </form>
+                      <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                        <div className="space-y-4">
+                          {hasPassword && (
+                            <div className="grid gap-2">
+                              <Label htmlFor="currentPassword">Current Password</Label>
+                              <Input
+                                id="currentPassword"
+                                type="password"
+                                placeholder="Enter your current password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                disabled={isSaving}
+                                required
+                              />
+                            </div>
+                          )}
+
+                          <div className="grid gap-2">
+                            <Label htmlFor="newPassword">
+                              {hasPassword ? "New Password" : "Password"}
+                            </Label>
+                            <Input
+                              id="newPassword"
+                              type="password"
+                              placeholder={hasPassword ? "Enter your new password" : "Create a password"}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              disabled={isSaving}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <Button type="submit" disabled={isSaving}>
+                          {isSaving ? "Saving..." : hasPassword ? "Update Password" : "Create Password"}
+                        </Button>
+                      </form>
+                    </>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
