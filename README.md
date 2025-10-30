@@ -47,6 +47,21 @@ NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY="pk_sb_xxxxxxxxxxxxxx"
 MEMBERSTACK_SECRET_KEY="sk_sb_xxxxxxxxxxxxxx"
 ```
 
+### 3a. Add HubSpot Integration (Optional)
+
+To enable HubSpot ticket display, add your HubSpot Private App token to `.env`:
+
+```env
+HUBSPOT_PRIVATE_APP_TOKEN="your_hubspot_private_app_token_here"
+```
+
+To get your HubSpot token:
+1. Sign in to [HubSpot](https://app.hubspot.com/)
+2. Go to **Settings** > **Integrations** > **Private Apps**
+3. Create a new Private App or use an existing one
+4. Ensure it has `crm.objects.tickets.read` scope
+5. Copy the Access Token
+
 ### 4. Test Locally
 
 ```bash
@@ -72,6 +87,7 @@ Open [http://localhost:3000/app](http://localhost:3000/app) and test the authent
    - Click **Environment Variables** tab
    - Add `NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY` with your public key
    - Add `MEMBERSTACK_SECRET_KEY` with your secret key (mark as secret)
+   - Add `HUBSPOT_PRIVATE_APP_TOKEN` with your HubSpot token (mark as secret, optional)
    - Click **Save**
 7. **Publish your Webflow site** (button in top right of Designer)
 8. Deploy:
@@ -88,6 +104,8 @@ Go to `https://your-site.webflow.io/app` to see your live app!
 - Password reset flow (forgot password + reset)
 - Protected account page with auth guard
 - Automatic redirects for unauthenticated users
+- HubSpot ticket integration (displays support tickets on dashboard)
+- Secure API routes for backend operations
 - Tailwind CSS + shadcn/ui components
 - TypeScript
 
@@ -113,6 +131,12 @@ npm run deploy   # Deploy to Webflow Cloud
 **Deployment not starting after Git push**
 - Go to Webflow Cloud settings and verify GitHub App has repo access
 - Try `webflow cloud deploy` manually
+
+**HubSpot tickets not loading**
+- Verify `HUBSPOT_PRIVATE_APP_TOKEN` is set in your `.env` file (local) or Webflow Cloud environment variables (production)
+- Ensure your HubSpot Private App has the `crm.objects.tickets.read` scope enabled
+- Check browser console and server logs for specific error messages
+- Test your token manually: `curl https://api.hubapi.com/crm/v3/objects/tickets -H "Authorization: Bearer YOUR_TOKEN"`
 
 ## Learn More
 

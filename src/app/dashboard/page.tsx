@@ -3,6 +3,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
+import { TicketsTable } from "@/components/tickets-table"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 import data from "./data.json"
@@ -19,6 +20,15 @@ export default function Page() {
               <SectionCards />
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
+              </div>
+              <div className="px-4 lg:px-6">
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold tracking-tight">HubSpot Tickets</h2>
+                  <p className="text-muted-foreground">
+                    View and manage your support tickets
+                  </p>
+                </div>
+                <TicketsTable />
               </div>
               <DataTable data={data} />
             </div>
