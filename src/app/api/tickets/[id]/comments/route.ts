@@ -67,7 +67,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         return NextResponse.json({ results: [] });
       }
 
-      const notes = await notesRes.json();
+      const notes: any = await notesRes.json();
       return NextResponse.json(notes);
     }
 
@@ -137,7 +137,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const note = await noteRes.json();
+    const note: any = await noteRes.json();
 
     // Associate the note with the ticket
     const associationRes = await fetch(
