@@ -33,7 +33,8 @@ export function TicketsTable() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const res = await fetch("/api/tickets");
+        // Use full path with basePath
+        const res = await fetch("/portal/api/tickets");
         const data = await res.json();
         
         if (!res.ok) {
