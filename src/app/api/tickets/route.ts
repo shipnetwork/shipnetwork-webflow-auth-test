@@ -53,15 +53,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // User email filter (if provided)
-    if (userEmail) {
-      filters.push({
-        propertyName: "hubspot_owner_id",
-        operator: "EQ",
-        value: userEmail,
-      });
-    }
-
     // Build search query for HubSpot tickets
     const searchBody: any = {
       properties: [
@@ -138,7 +129,80 @@ export async function GET(request: Request) {
       );
     }
 
-    const data = await res.json();
+    let data = await res.json();
+
+    // If filtering by user email, we need to filter tickets by associated contact
+    if (userEmail && data.results) {
+      // First, find the contact with this email
+      const contactRes = await fetch(
+        `https://api.hubapi.com/crm/v3/objects/contacts/search`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: "email",
+                    operator: "EQ",
+                    value: userEmail,
+                  },
+                ],
+              },
+            ],
+            properties: ["email"],
+            limit: 1,
+          }),
+        }
+      );
+
+      if (contactRes.ok) {
+        const contactData = await contactRes.json();
+        
+        if (contactData.results && contactData.results.length > 0) {
+          const contactId = contactData.results[0].id;
+          
+          // Filter tickets to only those associated with this contact
+          const filteredTickets = [];
+          
+          for (const ticket of data.results) {
+            // Check if ticket is associated with this contact
+            const assocRes = await fetch(
+              `https://api.hubapi.com/crm/v3/objects/tickets/${ticket.id}/associations/contacts`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            
+            if (assocRes.ok) {
+              const assocData = await assocRes.json();
+              const isAssociated = assocData.results?.some(
+                (assoc: any) => assoc.toObjectId === contactId
+              );
+              
+              if (isAssociated) {
+                filteredTickets.push(ticket);
+              }
+            }
+          }
+          
+          data.results = filteredTickets;
+          data.total = filteredTickets.length;
+        } else {
+          // No contact found with this email - return empty results
+          data.results = [];
+          data.total = 0;
+        }
+      }
+    }
+
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json(
