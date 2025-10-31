@@ -42,7 +42,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    const associations = await res.json();
+    const associations: any = await res.json();
     
     // If there are associated notes, fetch their details
     if (associations.results && associations.results.length > 0) {
