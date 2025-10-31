@@ -207,27 +207,7 @@ export function TicketsTableEnhanced() {
     );
   }
 
-  if (tickets.length === 0 && !loading) {
-    return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-            <Search className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold">No tickets found</h3>
-          <p className="mb-4 mt-2 text-sm text-muted-foreground">
-            {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-              ? "Try adjusting your filters to find what you're looking for."
-              : "No tickets have been created yet."}
-          </p>
-          <Button onClick={handleRefresh} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const showEmptyState = tickets.length === 0 && !loading;
 
   return (
     <div className="space-y-4">
@@ -281,84 +261,107 @@ export function TicketsTableEnhanced() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40%] min-w-[200px]">Subject</TableHead>
-                <TableHead className="min-w-[100px]">Priority</TableHead>
-                <TableHead className="min-w-[120px]">Stage</TableHead>
-                <TableHead className="min-w-[150px]">Created</TableHead>
-                <TableHead className="min-w-[150px]">Last Modified</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.map((ticket) => (
-                <TableRow key={ticket.id} className="group">
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/portal/tickets/${ticket.id}`}
-                      className="hover:underline line-clamp-2"
-                    >
-                      {ticket.properties.subject || "Untitled Ticket"}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {getPriorityBadge(ticket.properties.hs_ticket_priority)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {ticket.properties.hs_pipeline_stage || "Unknown"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(ticket.properties.createdate)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {ticket.properties.hs_lastmodifieddate
-                      ? formatDate(ticket.properties.hs_lastmodifieddate)
-                      : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {ticket.url && (
-                      <a
-                        href={ticket.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                      </a>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Empty State or Table */}
+      {showEmptyState ? (
+        <div className="rounded-lg border border-dashed p-12 text-center">
+          <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+              <Search className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">No tickets found</h3>
+            <p className="mb-4 mt-2 text-sm text-muted-foreground">
+              {searchQuery || statusFilter !== "all" || priorityFilter !== "all" || filterByUser
+                ? "Try adjusting your filters to find what you're looking for."
+                : "No tickets have been created yet."}
+            </p>
+            <Button onClick={handleRefresh} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Table */}
+          <div className="rounded-lg border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[40%] min-w-[200px]">Subject</TableHead>
+                    <TableHead className="min-w-[100px]">Priority</TableHead>
+                    <TableHead className="min-w-[120px]">Stage</TableHead>
+                    <TableHead className="min-w-[150px]">Created</TableHead>
+                    <TableHead className="min-w-[150px]">Last Modified</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tickets.map((ticket) => (
+                    <TableRow key={ticket.id} className="group">
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/portal/tickets/${ticket.id}`}
+                          className="hover:underline line-clamp-2"
+                        >
+                          {ticket.properties.subject || "Untitled Ticket"}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {getPriorityBadge(ticket.properties.hs_ticket_priority)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {ticket.properties.hs_pipeline_stage || "Unknown"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatDate(ticket.properties.createdate)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {ticket.properties.hs_lastmodifieddate
+                          ? formatDate(ticket.properties.hs_lastmodifieddate)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {ticket.url && (
+                          <a
+                            href={ticket.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </a>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
-      {/* Load More */}
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            onClick={handleLoadMore}
-            variant="outline"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Load More"
-            )}
-          </Button>
-        </div>
+          {/* Load More */}
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button
+                onClick={handleLoadMore}
+                variant="outline"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

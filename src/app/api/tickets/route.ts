@@ -133,6 +133,8 @@ export async function GET(request: Request) {
 
     // If filtering by user email, we need to filter tickets by associated contact
     if (userEmail && data.results) {
+      console.log("Filtering by user email:", userEmail);
+      
       // First, find the contact with this email
       const contactRes = await fetch(
         `https://api.hubapi.com/crm/v3/objects/contacts/search`,
@@ -162,9 +164,11 @@ export async function GET(request: Request) {
 
       if (contactRes.ok) {
         const contactData = await contactRes.json();
+        console.log("Contact search results:", contactData);
         
         if (contactData.results && contactData.results.length > 0) {
           const contactId = contactData.results[0].id;
+          console.log("Found contact ID:", contactId);
           
           // Filter tickets to only those associated with this contact
           const filteredTickets = [];
@@ -183,23 +187,29 @@ export async function GET(request: Request) {
             
             if (assocRes.ok) {
               const assocData = await assocRes.json();
+              console.log(`Ticket ${ticket.id} associations:`, assocData);
               const isAssociated = assocData.results?.some(
                 (assoc: any) => assoc.toObjectId === contactId
               );
               
               if (isAssociated) {
+                console.log(`Ticket ${ticket.id} IS associated with contact ${contactId}`);
                 filteredTickets.push(ticket);
               }
             }
           }
           
+          console.log(`Total filtered tickets: ${filteredTickets.length}`);
           data.results = filteredTickets;
           data.total = filteredTickets.length;
         } else {
+          console.log("No contact found with email:", userEmail);
           // No contact found with this email - return empty results
           data.results = [];
           data.total = 0;
         }
+      } else {
+        console.error("Contact search failed:", contactRes.status);
       }
     }
 
