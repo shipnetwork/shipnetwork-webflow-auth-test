@@ -2,12 +2,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    // Debug: Log token status (first 10 chars only for security)
-    const token = process.env.HUBSPOT_PRIVATE_APP_TOKEN;
-    console.log("Token exists:", !!token);
-    console.log("Token starts with:", token?.substring(0, 10));
-    
     // Check if token is configured
+    const token = process.env.HUBSPOT_PRIVATE_APP_TOKEN;
     if (!token) {
       return NextResponse.json(
         { 
@@ -18,22 +14,56 @@ export async function GET(request: Request) {
       );
     }
 
-    // Optional: Get user's email from request headers for filtering
-    const email = request.headers.get("x-user-email");
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const after = searchParams.get("after") || undefined;
+    const status = searchParams.get("status");
+    const priority = searchParams.get("priority");
+    const search = searchParams.get("search");
+    const userEmail = searchParams.get("userEmail");
+
+    // Build filters array
+    const filters: any[] = [];
+
+    // Status filter
+    if (status && status !== "all") {
+      filters.push({
+        propertyName: "hs_pipeline_stage",
+        operator: "EQ",
+        value: status,
+      });
+    }
+
+    // Priority filter
+    if (priority && priority !== "all") {
+      filters.push({
+        propertyName: "hs_ticket_priority",
+        operator: "EQ",
+        value: priority,
+      });
+    }
+
+    // Search filter (searches in subject)
+    if (search) {
+      filters.push({
+        propertyName: "subject",
+        operator: "CONTAINS_TOKEN",
+        value: search,
+      });
+    }
+
+    // User email filter (if provided)
+    if (userEmail) {
+      filters.push({
+        propertyName: "hubspot_owner_id",
+        operator: "EQ",
+        value: userEmail,
+      });
+    }
 
     // Build search query for HubSpot tickets
-    const searchBody = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: "hs_pipeline_stage",
-              operator: "NEQ",
-              value: "closed", // Example: exclude closed tickets
-            },
-          ],
-        },
-      ],
+    const searchBody: any = {
       properties: [
         "subject",
         "content",
@@ -43,10 +73,24 @@ export async function GET(request: Request) {
         "createdate",
         "hs_lastmodifieddate",
       ],
-      limit: 100,
+      limit,
+      sorts: [
+        {
+          propertyName: "createdate",
+          direction: "DESCENDING"
+        }
+      ]
     };
 
-    console.log("Calling HubSpot API...");
+    // Add filters if any exist
+    if (filters.length > 0) {
+      searchBody.filterGroups = [{ filters }];
+    }
+
+    // Add pagination cursor if provided
+    if (after) {
+      searchBody.after = after;
+    }
 
     // Call HubSpot API
     const res = await fetch(
@@ -61,11 +105,8 @@ export async function GET(request: Request) {
       }
     );
 
-    console.log("HubSpot API response status:", res.status);
-
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("HubSpot API error:", res.status, errorText);
       
       // Parse common error messages
       let errorMessage = "Failed to fetch tickets from HubSpot";
@@ -88,7 +129,6 @@ export async function GET(request: Request) {
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const text = await res.text();
-      console.error("Unexpected response type:", contentType, text);
       return NextResponse.json(
         { 
           error: "Unexpected response from HubSpot API",
@@ -99,13 +139,88 @@ export async function GET(request: Request) {
     }
 
     const data = await res.json();
-    console.log("Successfully fetched tickets:", data.results?.length || 0);
     return NextResponse.json(data);
   } catch (err) {
-    console.error("Error fetching tickets:", err);
     return NextResponse.json(
       { 
         error: "Failed to fetch tickets",
+        details: err instanceof Error ? err.message : "Unknown error"
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const token = process.env.HUBSPOT_PRIVATE_APP_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        {
+          error: "HubSpot token not configured",
+          details: "HUBSPOT_PRIVATE_APP_TOKEN environment variable is not set."
+        },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const { subject, content, priority } = body;
+
+    if (!subject) {
+      return NextResponse.json(
+        { error: "Subject is required" },
+        { status: 400 }
+      );
+    }
+
+    // Create ticket in HubSpot
+    const hubspotBody: any = {
+      properties: {
+        subject,
+        hs_pipeline: "0", // Default pipeline
+        hs_pipeline_stage: "1", // Open/New stage
+      }
+    };
+
+    if (content) {
+      hubspotBody.properties.content = content;
+    }
+
+    if (priority) {
+      hubspotBody.properties.hs_ticket_priority = priority;
+    }
+
+    const res = await fetch(
+      "https://api.hubapi.com/crm/v3/objects/tickets",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(hubspotBody),
+      }
+    );
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      return NextResponse.json(
+        {
+          error: "Failed to create ticket in HubSpot",
+          details: errorText,
+          status: res.status
+        },
+        { status: res.status }
+      );
+    }
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: "Failed to create ticket",
         details: err instanceof Error ? err.message : "Unknown error"
       },
       { status: 500 }

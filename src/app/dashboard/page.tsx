@@ -3,7 +3,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
-import { TicketsTable } from "@/components/tickets-table"
+import { TicketsTableEnhanced } from "@/components/tickets-table-enhanced"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 import data from "./data.json"
@@ -28,7 +28,7 @@ export default function Page() {
                     View and manage your support tickets
                   </p>
                 </div>
-                <TicketsTable />
+                <TicketsTableEnhanced />
               </div>
               <DataTable data={data} />
             </div>
