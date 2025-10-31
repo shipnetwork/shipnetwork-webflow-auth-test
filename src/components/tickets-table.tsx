@@ -34,11 +34,16 @@ export function TicketsTable() {
     const fetchTickets = async () => {
       try {
         const res = await fetch("/api/tickets");
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || "Failed to fetch tickets");
-        }
         const data = await res.json();
+        
+        if (!res.ok) {
+          console.error("API error response:", data);
+          const errorMsg = data.details 
+            ? `${data.error}: ${data.details}` 
+            : data.error || "Failed to fetch tickets";
+          throw new Error(errorMsg);
+        }
+        
         setTickets(data.results || []);
       } catch (err) {
         console.error("Error fetching tickets:", err);
@@ -65,12 +70,21 @@ export function TicketsTable() {
   if (error) {
     return (
       <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-        <p className="text-sm text-destructive">
-          <strong>Error:</strong> {error}
+        <p className="text-sm text-destructive font-semibold mb-2">
+          Error Loading Tickets
         </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Make sure your HUBSPOT_PRIVATE_APP_TOKEN is set in your environment variables.
+        <p className="text-sm text-destructive mb-3">
+          {error}
         </p>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p><strong>Common solutions:</strong></p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li>Ensure HUBSPOT_PRIVATE_APP_TOKEN is set in .env.local (or .env)</li>
+            <li>Restart your dev server after adding environment variables</li>
+            <li>Verify your token has 'crm.objects.tickets.read' scope in HubSpot</li>
+            <li>Check that the token is valid and not expired</li>
+          </ul>
+        </div>
       </div>
     );
   }
