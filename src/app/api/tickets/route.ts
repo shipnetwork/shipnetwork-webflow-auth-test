@@ -189,12 +189,14 @@ export async function GET(request: Request) {
               const assocData = await assocRes.json();
               console.log(`Ticket ${ticket.id} associations:`, assocData);
               const isAssociated = assocData.results?.some(
-                (assoc: any) => assoc.toObjectId === contactId
+                (assoc: any) => assoc.id === contactId || assoc.toObjectId === contactId
               );
               
               if (isAssociated) {
                 console.log(`Ticket ${ticket.id} IS associated with contact ${contactId}`);
                 filteredTickets.push(ticket);
+              } else {
+                console.log(`Ticket ${ticket.id} is NOT associated`);
               }
             }
           }
