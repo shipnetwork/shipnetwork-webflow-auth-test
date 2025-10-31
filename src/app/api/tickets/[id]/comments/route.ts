@@ -99,7 +99,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const body = await request.json();
+    const body: any = await request.json();
     const { content } = body;
 
     if (!content) {
