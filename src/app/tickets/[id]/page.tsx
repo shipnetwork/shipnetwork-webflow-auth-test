@@ -11,7 +11,7 @@ interface TicketPageProps {
   params: Promise<{ id: string }>;
 }
 
-async function getTicket(id: string) {
+async function getTicket(id: string): Promise<any> {
   const token = process.env.HUBSPOT_PRIVATE_APP_TOKEN;
   
   if (!token) {
