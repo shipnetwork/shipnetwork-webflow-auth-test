@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
+    // Debug: Log token status (first 10 chars only for security)
+    const token = process.env.HUBSPOT_PRIVATE_APP_TOKEN;
+    console.log("Token exists:", !!token);
+    console.log("Token starts with:", token?.substring(0, 10));
+    
     // Check if token is configured
-    if (!process.env.HUBSPOT_PRIVATE_APP_TOKEN) {
+    if (!token) {
       return NextResponse.json(
         { 
           error: "HubSpot token not configured",
-          details: "HUBSPOT_PRIVATE_APP_TOKEN environment variable is not set. Please add it to your .env.local file or Webflow Cloud environment variables."
+          details: "HUBSPOT_PRIVATE_APP_TOKEN environment variable is not set. Please add it to your .env file or Webflow Cloud environment variables."
         },
         { status: 500 }
       );
@@ -49,7 +54,7 @@ export async function GET(request: Request) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HUBSPOT_PRIVATE_APP_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(searchBody),
