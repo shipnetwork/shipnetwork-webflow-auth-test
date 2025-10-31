@@ -129,7 +129,7 @@ export async function GET(request: Request) {
       );
     }
 
-    let data = await res.json();
+    let data: any = await res.json();
 
     // If filtering by user email, we need to filter tickets by associated contact
     if (userEmail && data.results) {
@@ -163,7 +163,7 @@ export async function GET(request: Request) {
       );
 
       if (contactRes.ok) {
-        const contactData = await contactRes.json();
+        const contactData: any = await contactRes.json();
         console.log("Contact search results:", contactData);
         
         if (contactData.results && contactData.results.length > 0) {
@@ -186,7 +186,7 @@ export async function GET(request: Request) {
             );
             
             if (assocRes.ok) {
-              const assocData = await assocRes.json();
+              const assocData: any = await assocRes.json();
               console.log(`Ticket ${ticket.id} associations:`, assocData);
               const isAssociated = assocData.results?.some(
                 (assoc: any) => assoc.id === contactId || assoc.toObjectId === contactId
@@ -240,7 +240,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const body: any = await request.json();
     const { subject, content, priority } = body;
 
     if (!subject) {
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     return NextResponse.json(data, { status: 201 });
   } catch (err) {
     return NextResponse.json(
