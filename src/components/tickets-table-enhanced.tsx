@@ -69,11 +69,19 @@ export function TicketsTableEnhanced() {
       try {
         const memberstack = await getMemberstack();
         const member = await memberstack.getCurrentMember();
-        if (member?.data?.email) {
-          setUserEmail(member.data.email);
+        console.log("Memberstack member:", member);
+        
+        // Try different possible email locations
+        const email = member?.data?.email || member?.email || member?.auth?.email;
+        
+        if (email) {
+          console.log("User email detected:", email);
+          setUserEmail(email);
+        } else {
+          console.log("No email found in member data:", member);
         }
       } catch (err) {
-        // User not logged in or error getting member
+        console.error("Error getting member:", err);
       }
     };
     getCurrentMember();
