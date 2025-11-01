@@ -29,7 +29,7 @@ export function TicketComments({ ticketId }: TicketCommentsProps) {
   const fetchComments = async () => {
     try {
       const res = await fetch(`/portal/api/tickets/${ticketId}/comments`);
-      const data = await res.json();
+      const data: any = await res.json();
       
       if (res.ok) {
         setComments(data.results || []);
@@ -67,7 +67,7 @@ export function TicketComments({ ticketId }: TicketCommentsProps) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data: any = await res.json();
         throw new Error(data.error || "Failed to add comment");
       }
 

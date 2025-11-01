@@ -35,7 +35,7 @@ export function TicketsTable() {
       try {
         // Use full path with basePath
         const res = await fetch("/portal/api/tickets");
-        const data = await res.json();
+        const data: any = await res.json();
         
         if (!res.ok) {
           console.error("API error response:", data);
