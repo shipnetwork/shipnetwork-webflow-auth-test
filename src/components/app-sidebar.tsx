@@ -2,34 +2,32 @@
 
 import * as React from "react"
 import {
-  ArrowUpCircleIcon,
-  BarChartIcon,
+  TicketIcon,
+  BookOpenIcon,
   CameraIcon,
   ClipboardListIcon,
   DatabaseIcon,
   FileCodeIcon,
   FileIcon,
   FileTextIcon,
-  FolderIcon,
   HelpCircleIcon,
-  LayoutDashboardIcon,
-  ListIcon,
   SearchIcon,
   SettingsIcon,
-  UsersIcon,
+  MailIcon,
 } from "lucide-react"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { CreateTicketDialog } from "@/components/create-ticket-dialog"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { getMemberstack } from "@/lib/memberstack"
@@ -37,29 +35,14 @@ import { getMemberstack } from "@/lib/memberstack"
 const data = {
   navMain: [
     {
-      title: "Dashboard",
+      title: "Tickets",
       url: "/dashboard",
-      icon: LayoutDashboardIcon,
+      icon: TicketIcon,
     },
     {
-      title: "Lifecycle",
-      url: "#",
-      icon: ListIcon,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: BarChartIcon,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: FolderIcon,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: UsersIcon,
+      title: "Knowledge Base",
+      url: "/portal/knowledge-base",
+      icon: BookOpenIcon,
     },
   ],
   navClouds: [
@@ -183,15 +166,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <ArrowUpCircleIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
-            </SidebarMenuButton>
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <img 
+                src="https://cdn.prod.website-files.com/62c7655349d9e17aad25bb35/6578f055736885dadcb8a919_ShipNetwork%20Logo-Horizontal-Blue%20and%20Black%201.svg" 
+                alt="ShipNetwork" 
+                width={120} 
+                height={24}
+                className="h-6 w-auto"
+              />
+            </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="mt-2">
+            <div className="px-2 flex items-center gap-2">
+              <CreateTicketDialog />
+              <Button
+                size="icon"
+                className="h-10 w-10 shrink-0"
+                variant="outline"
+                asChild
+              >
+                <a href="mailto:clientservices@shipnetwork.com">
+                  <MailIcon />
+                  <span className="sr-only">Contact Support</span>
+                </a>
+              </Button>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

@@ -82,7 +82,7 @@ export function CreateTicketDialog({ onTicketCreated }: CreateTicketDialogProps)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button style={{ backgroundColor: '#007ADE' }} className="hover:opacity-90">
           <Plus className="mr-2 h-4 w-4" />
           New Ticket
         </Button>

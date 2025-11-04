@@ -257,7 +257,9 @@ export function TicketsTableEnhanced() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 
-          <CreateTicketDialog onTicketCreated={handleRefresh} />
+          <div className="[&_button]:!bg-[#007ADE] [&_button]:hover:!opacity-90">
+            <CreateTicketDialog onTicketCreated={handleRefresh} />
+          </div>
         </div>
       </div>
 
@@ -298,7 +300,7 @@ export function TicketsTableEnhanced() {
                 </TableHeader>
                 <TableBody>
                   {tickets.map((ticket) => (
-                    <TableRow key={ticket.id} className="group">
+                    <TableRow key={ticket.id} className="group hover:bg-[#C0DBFA]">
                       <TableCell className="font-medium">
                         <Link
                           href={`/portal/tickets/${ticket.id}`}
