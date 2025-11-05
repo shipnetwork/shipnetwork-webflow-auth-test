@@ -1,17 +1,25 @@
-import { GalleryVerticalEnd } from "lucide-react"
+"use client"
 
+import { useEffect } from "react"
 import { LoginForm } from "@/components/login-form"
+import Image from "next/image"
 
 export default function LoginPage() {
+  useEffect(() => {
+    console.log("LOGIN PAGE - Attempting to load: /image-login.jpg")
+  }, [])
+
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            Acme Inc.
+        <div className="flex justify-center">
+          <a href="/" className="flex items-center">
+            <img 
+              src="https://cdn.prod.website-files.com/62c7655349d9e17aad25bb35/6578f055736885dadcb8a919_ShipNetwork%20Logo-Horizontal-Blue%20and%20Black%201.svg" 
+              alt="ShipNetwork" 
+              className="h-6 w-auto"
+              onLoad={() => console.log("✅ Logo SVG loaded successfully")}
+            />
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -20,11 +28,16 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden bg-muted lg:block">
-        <img
-          src="/app/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+      <div className="relative bg-muted">
+        <Image
+          src="/portal/image-login.jpg"
+          alt="ShipNetwork Warehouse"
+          fill
+          className="object-cover"
+          priority
+          unoptimized
+          onLoad={() => console.log("✅ LOGIN IMAGE LOADED SUCCESSFULLY")}
+          onError={(e) => console.error("❌ LOGIN IMAGE FAILED TO LOAD:", e)}
         />
       </div>
     </div>

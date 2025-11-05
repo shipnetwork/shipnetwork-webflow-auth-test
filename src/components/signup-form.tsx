@@ -31,6 +31,9 @@ export function SignupForm({
         password,
       })
 
+      // Clear the welcome modal flag on successful signup
+      localStorage.removeItem("hasSeenWelcomeModal")
+      
       // Redirect to dashboard after successful signup
       router.push("/dashboard")
     } catch (err: any) {
@@ -50,6 +53,9 @@ export function SignupForm({
         provider: "google",
       })
 
+      // Clear the welcome modal flag on successful signup
+      localStorage.removeItem("hasSeenWelcomeModal")
+      
       // Redirect to dashboard after successful signup
       router.push("/dashboard")
     } catch (err: any) {

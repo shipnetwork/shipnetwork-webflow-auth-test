@@ -31,6 +31,9 @@ export function LoginForm({
         password,
       })
 
+      // Clear the welcome modal flag on successful login
+      localStorage.removeItem("hasSeenWelcomeModal")
+      
       // Redirect to dashboard after successful login
       router.push("/dashboard")
     } catch (err: any) {
@@ -50,6 +53,9 @@ export function LoginForm({
         provider: "google",
       })
 
+      // Clear the welcome modal flag on successful login
+      localStorage.removeItem("hasSeenWelcomeModal")
+      
       // Redirect to dashboard after successful login
       router.push("/dashboard")
     } catch (err: any) {

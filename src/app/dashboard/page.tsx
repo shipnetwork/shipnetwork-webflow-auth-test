@@ -1,6 +1,9 @@
+"use client"
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { TicketsTableEnhanced } from "@/components/tickets-table-enhanced"
+import { WelcomeModal } from "@/components/welcome-modal"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export default function Page() {
@@ -25,6 +28,7 @@ export default function Page() {
           </div>
         </div>
       </SidebarInset>
+      <WelcomeModal />
     </SidebarProvider>
   )
 }
