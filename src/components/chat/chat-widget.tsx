@@ -107,7 +107,7 @@ export function ChatWidget() {
         throw new Error(errorData.error || "Failed to get response");
       }
 
-      const data = await response.json();
+      const data = await response.json() as { message: string };
 
       const assistantMessage: Message = {
         role: "assistant",
