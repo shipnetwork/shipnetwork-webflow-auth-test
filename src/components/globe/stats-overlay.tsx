@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Package, Boxes, MapPin, Tag, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { Stats } from "@/lib/globe-mock-data";
 import type { DailyGoal as DailyGoalType } from "@/lib/effects-engine";
@@ -11,33 +11,37 @@ interface StatsOverlayProps {
   dailyGoal?: DailyGoalType;
 }
 
-// Animated counter component
+// Animated counter component with smooth easing
 function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    // Animate from current to target value
+    // Animate from current to target value with easing
     const duration = 1000; // 1 second
-    const steps = 30;
-    const increment = (value - displayValue) / steps;
+    const startValue = displayValue;
+    const startTime = Date.now();
     
     if (Math.abs(value - displayValue) < 1) {
       setDisplayValue(value);
       return;
     }
 
-    let current = displayValue;
-    const interval = setInterval(() => {
-      current += increment;
-      if ((increment > 0 && current >= value) || (increment < 0 && current <= value)) {
-        setDisplayValue(value);
-        clearInterval(interval);
-      } else {
-        setDisplayValue(Math.round(current));
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease-out cubic easing for smooth deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = startValue + (value - startValue) * eased;
+      
+      setDisplayValue(Math.round(current));
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
       }
-    }, duration / steps);
+    };
 
-    return () => clearInterval(interval);
+    requestAnimationFrame(animate);
   }, [value]);
 
   return (
@@ -49,7 +53,7 @@ function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; pr
   );
 }
 
-// Stat card component with enhanced styling
+// Stat card component with enhanced styling and hover effects
 function StatCard({
   title,
   value,
@@ -65,20 +69,43 @@ function StatCard({
   suffix?: string;
   children?: React.ReactNode;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
   return (
-    <div className="bg-black/70 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 shadow-lg shadow-cyan-500/10 transition-all duration-300 hover:border-cyan-400/50 hover:shadow-cyan-500/20">
+    <div 
+      className="bg-black/70 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 shadow-lg shadow-cyan-500/10 transition-all duration-300 hover:border-cyan-400/50 hover:shadow-cyan-500/20 hover:scale-105 hover:bg-black/80 cursor-pointer group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="flex items-center gap-2 mb-1 sm:mb-2">
-        <div className="p-1 rounded bg-cyan-500/10">
-          <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" />
+        <div className={cn(
+          "p-1 rounded bg-cyan-500/10 transition-all duration-300",
+          isHovered && "bg-cyan-500/20 scale-110"
+        )}>
+          <Icon className={cn(
+            "w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 transition-all duration-300",
+            isHovered && "text-cyan-300 scale-110"
+          )} />
         </div>
-        <h3 className="text-[10px] sm:text-xs font-medium text-cyan-400 uppercase tracking-wider">{title}</h3>
+        <h3 className={cn(
+          "text-[10px] sm:text-xs font-medium text-cyan-400 uppercase tracking-wider transition-colors duration-300",
+          isHovered && "text-cyan-300"
+        )}>{title}</h3>
       </div>
       {value !== undefined ? (
-        <p className="text-xl sm:text-2xl font-bold text-white tabular-nums">
+        <p className={cn(
+          "text-xl sm:text-2xl font-bold text-white tabular-nums transition-all duration-300",
+          isHovered && "text-cyan-100 scale-105"
+        )}>
           <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
         </p>
       ) : (
         children
+      )}
+      
+      {/* Subtle glow effect on hover */}
+      {isHovered && (
+        <div className="absolute inset-0 bg-cyan-500/5 rounded-lg pointer-events-none animate-pulse" />
       )}
     </div>
   );
@@ -165,7 +192,8 @@ function CompactDailyGoal({ goal }: { goal: DailyGoalType }) {
   );
 }
 
-export function StatsOverlay({ stats, dailyGoal }: StatsOverlayProps) {
+// Memoized for performance - only re-render when stats or dailyGoal change
+export const StatsOverlay = memo(function StatsOverlay({ stats, dailyGoal }: StatsOverlayProps) {
   const maxStateCount = Math.max(...stats.topStates.map((s) => s.count), 1);
   const maxCategoryCount = Math.max(...stats.topCategories.map((c) => c.count), 1);
 
@@ -235,7 +263,7 @@ export function StatsOverlay({ stats, dailyGoal }: StatsOverlayProps) {
       </div>
     </div>
   );
-}
+});
 
 // Compact progress bar for small screens
 function CompactProgressBar({ label, value }: { label: string; value: number }) {
@@ -247,8 +275,8 @@ function CompactProgressBar({ label, value }: { label: string; value: number }) 
   );
 }
 
-// Bottom stats bar - flex child component, responsive for different screen sizes
-export function BottomStatsBar({ stats }: { stats: Stats }) {
+// Bottom stats bar - flex child component, responsive for different screen sizes (memoized)
+export const BottomStatsBar = memo(function BottomStatsBar({ stats }: { stats: Stats }) {
   const maxStateCount = Math.max(...stats.topStates.map((s) => s.count), 1);
   const maxCategoryCount = Math.max(...stats.topCategories.map((c) => c.count), 1);
 
@@ -319,5 +347,4 @@ export function BottomStatsBar({ stats }: { stats: Stats }) {
       </div>
     </div>
   );
-}
-
+});

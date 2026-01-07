@@ -11,14 +11,7 @@ const GlobeTracker = dynamic(
   () => import("@/components/globe/globe-tracker").then((mod) => mod.GlobeTracker),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full min-h-[600px] rounded-xl bg-[#0a0e1a] border border-cyan-500/20 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-cyan-400 text-sm">Loading globe visualization...</p>
-        </div>
-      </div>
-    ),
+    loading: () => import("@/components/globe/globe-skeleton").then((mod) => <mod.GlobeSkeleton />),
   }
 )
 

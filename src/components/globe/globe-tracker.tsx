@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { GlobeVisualization } from "./globe-visualization";
 import { StatsOverlay } from "./stats-overlay";
 import { GlobeControls, type TimeRange } from "./globe-controls";
@@ -103,13 +103,20 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
       }
     };
 
-    const resizeObserver = new ResizeObserver(updateDimensions);
+    // Debounce resize observer for better performance
+    let resizeTimeout: NodeJS.Timeout;
+    const debouncedUpdate = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateDimensions, 100);
+    };
+
+    const resizeObserver = new ResizeObserver(debouncedUpdate);
     if (globeContainerRef.current) {
       resizeObserver.observe(globeContainerRef.current);
     }
 
     updateDimensions();
-    window.addEventListener("resize", updateDimensions);
+    window.addEventListener("resize", debouncedUpdate);
     
     const timeouts = [
       setTimeout(updateDimensions, 100),
@@ -118,8 +125,9 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
     ];
     
     return () => {
+      clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("resize", debouncedUpdate);
       timeouts.forEach(clearTimeout);
     };
   }, []);
@@ -327,9 +335,9 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
     },
   });
 
-  // Apply filters
-  const filteredOrders = applyFilters(activeOrders, filters);
-  const dailyGoal = calculateDailyGoal(stats.totalOrders, DAILY_GOAL_TARGET);
+  // Apply filters (memoized for performance)
+  const filteredOrders = useMemo(() => applyFilters(activeOrders, filters), [activeOrders, filters]);
+  const dailyGoal = useMemo(() => calculateDailyGoal(stats.totalOrders, DAILY_GOAL_TARGET), [stats.totalOrders]);
 
   return (
     <FullscreenManager

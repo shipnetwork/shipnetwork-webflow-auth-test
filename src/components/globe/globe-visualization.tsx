@@ -3,6 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import type { Warehouse, Order } from "@/lib/globe-mock-data";
 
+// Category color palette for arc visualization
+const CATEGORY_COLORS: Record<string, [string, string]> = {
+  'Electronics': ['rgba(59, 130, 246, 0.9)', 'rgba(96, 165, 250, 0.7)'],      // blue gradient
+  'Apparel': ['rgba(236, 72, 153, 0.9)', 'rgba(244, 114, 182, 0.7)'],         // pink gradient
+  'Home & Garden': ['rgba(16, 185, 129, 0.9)', 'rgba(52, 211, 153, 0.7)'],    // green gradient
+  'Health & Beauty': ['rgba(139, 92, 246, 0.9)', 'rgba(167, 139, 250, 0.7)'], // purple gradient
+  'Sports & Outdoors': ['rgba(249, 115, 22, 0.9)', 'rgba(251, 146, 60, 0.7)'], // orange gradient
+  'Toys & Games': ['rgba(234, 179, 8, 0.9)', 'rgba(250, 204, 21, 0.7)'],      // yellow gradient
+  'Food & Beverage': ['rgba(239, 68, 68, 0.9)', 'rgba(248, 113, 113, 0.7)'],  // red gradient
+  'Office Supplies': ['rgba(148, 163, 184, 0.9)', 'rgba(203, 213, 225, 0.7)'], // gray gradient
+  'Pet Supplies': ['rgba(245, 158, 11, 0.9)', 'rgba(251, 191, 36, 0.7)'],     // amber gradient
+  'Automotive': ['rgba(100, 116, 139, 0.9)', 'rgba(148, 163, 184, 0.7)'],     // slate gradient
+};
+
+// Default color for unknown categories
+const DEFAULT_ARC_COLORS: [string, string] = ['rgba(0, 212, 255, 0.8)', 'rgba(255, 255, 255, 0.6)'];
+
 interface GlobeVisualizationProps {
   warehouses: Warehouse[];
   orders: Order[];
@@ -69,7 +86,11 @@ export function GlobeVisualization({
         .pointLng((d: any) => d.lng)
         .pointColor(() => "#00d4ff")
         .pointAltitude(0.02)
-        .pointRadius((d: any) => (mobile ? 0.4 : 0.3) + d.intensity * 0.4)
+        .pointRadius((d: any) => {
+          // Larger touch targets on mobile for easier interaction
+          const baseSize = mobile ? 0.6 : 0.3;
+          return baseSize + d.intensity * 0.4;
+        })
         .pointLabel((d: any) => `
           <div style="
             color: #00d4ff;
@@ -98,7 +119,11 @@ export function GlobeVisualization({
         .arcStartLng((d: any) => d.from.lng)
         .arcEndLat((d: any) => d.to.lat)
         .arcEndLng((d: any) => d.to.lng)
-        .arcColor(() => ["rgba(0,212,255,0.8)", "rgba(255,255,255,0.6)"])
+        .arcColor((d: any) => {
+          // Color-code arcs by product category
+          const colors = CATEGORY_COLORS[d.category] || DEFAULT_ARC_COLORS;
+          return colors;
+        })
         .arcAltitude((d: any) => {
           // Calculate distance-based altitude for more realistic arcs
           const latDiff = Math.abs(d.from.lat - d.to.lat);
@@ -106,7 +131,11 @@ export function GlobeVisualization({
           const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
           return Math.min(0.05 + distance * 0.003, 0.4);
         })
-        .arcStroke(mobile ? 0.3 : 0.5)
+        .arcStroke((d: any) => {
+          // Thicker, more prominent arcs for high-value orders (glow effect)
+          const isHighValue = d.value > 200;
+          return isHighValue ? (mobile ? 0.5 : 0.8) : (mobile ? 0.3 : 0.5);
+        })
         .arcDashLength(0.9)
         .arcDashGap(4)
         .arcDashAnimateTime(mobile ? 2500 : 2000)
@@ -130,6 +159,17 @@ export function GlobeVisualization({
       
       // Disable auto-rotation - user can manually rotate with mouse/touch
       controls.autoRotate = false;
+      
+      // Enhanced mobile touch controls
+      if (mobile) {
+        // Enable two-finger rotation for better control
+        controls.rotateSpeed = 0.5; // Slower rotation for precision
+        controls.zoomSpeed = 1.2; // Faster zoom response
+        
+        // Enable momentum/inertia for smooth gestures
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+      }
 
       globeRef.current = globe;
       setIsLoaded(true);
