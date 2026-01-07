@@ -14,6 +14,7 @@ import {
   SearchIcon,
   SettingsIcon,
   MailIcon,
+  GlobeIcon,
 } from "lucide-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -35,13 +36,18 @@ import { getMemberstack } from "@/lib/memberstack"
 const data = {
   navMain: [
     {
-      title: "Tickets",
+      title: "Dashboard",
       url: "/dashboard",
+      icon: GlobeIcon,
+    },
+    {
+      title: "Tickets",
+      url: "/tickets",
       icon: TicketIcon,
     },
     {
       title: "Knowledge Base",
-      url: "/portal/knowledge-base",
+      url: "/knowledge-base",
       icon: BookOpenIcon,
     },
   ],
