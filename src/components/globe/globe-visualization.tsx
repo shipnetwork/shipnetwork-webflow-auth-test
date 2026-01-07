@@ -53,7 +53,7 @@ export function GlobeVisualization({
       const mobile = isMobile();
 
       // Create new globe instance
-      const globe = Globe()(containerRef.current!)
+      const globe = new Globe(containerRef.current!)
         // Globe appearance - dark, stylized earth
         .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
         .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")

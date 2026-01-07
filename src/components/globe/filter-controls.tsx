@@ -240,10 +240,10 @@ export function FilterControls({ filters, onFiltersChange }: FilterControlsProps
 /**
  * Apply filters to orders
  */
-export function applyFilters(
-  orders: { from: { name: string }; category: string }[],
+export function applyFilters<T extends { from: { name: string }; category: string }>(
+  orders: T[],
   filters: FilterState
-): typeof orders {
+): T[] {
   if (filters.categories.size === 0 && filters.warehouses.size === 0) {
     return orders;
   }
