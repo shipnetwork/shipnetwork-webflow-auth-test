@@ -16,6 +16,7 @@ import {
   Volume2,
   VolumeX,
   Radio,
+  Download,
 } from "lucide-react";
 
 export type TimeRange = "live" | "1h" | "24h" | "7d" | "30d";
@@ -32,6 +33,8 @@ interface GlobeControlsProps {
   onReset: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  onExportCSV?: () => void;
+  onExportJSON?: () => void;
 }
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
@@ -61,11 +64,13 @@ export function GlobeControls({
   onReset,
   isMuted,
   onToggleMute,
+  onExportCSV,
+  onExportJSON,
 }: GlobeControlsProps) {
   const isLive = mode === "live";
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-3 bg-black/40 backdrop-blur-md rounded-lg border border-cyan-500/20">
+    <div className="flex flex-wrap items-center gap-2 p-2 bg-black/40 backdrop-blur-md rounded-lg border border-cyan-500/20">
       {/* Time Range Selection */}
       <div className="flex gap-1">
         {TIME_RANGES.map(({ value, label }) => (
@@ -76,14 +81,14 @@ export function GlobeControls({
             onClick={() => onModeChange(value)}
             className={
               mode === value
-                ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-500"
-                : "border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-500 h-7 px-2 text-xs"
+                : "border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white h-7 px-2 text-xs"
             }
           >
             {value === "live" && (
-              <span className="relative flex h-2 w-2 mr-1.5">
+              <span className="relative flex h-1.5 w-1.5 mr-1">
                 <span className={`${mode === "live" ? "animate-ping" : ""} absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75`} />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
               </span>
             )}
             {label}
@@ -92,23 +97,23 @@ export function GlobeControls({
       </div>
 
       {/* Divider */}
-      <div className="h-6 w-px bg-gray-600" />
+      <div className="h-5 w-px bg-gray-600" />
 
       {/* Replay Controls (only visible when not in live mode) */}
       {!isLive && (
         <>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {/* Play/Pause */}
             <Button
               variant="outline"
               size="icon"
               onClick={onTogglePlay}
-              className="h-8 w-8 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+              className="h-7 w-7 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
             >
               {isPlaying ? (
-                <Pause className="h-4 w-4" />
+                <Pause className="h-3 w-3" />
               ) : (
-                <Play className="h-4 w-4" />
+                <Play className="h-3 w-3" />
               )}
             </Button>
 
@@ -117,13 +122,13 @@ export function GlobeControls({
               variant="outline"
               size="icon"
               onClick={onReset}
-              className="h-8 w-8 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+              className="h-7 w-7 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-3 w-3" />
             </Button>
 
             {/* Progress Slider */}
-            <div className="w-32 sm:w-48">
+            <div className="w-24 sm:w-40">
               <Slider
                 value={[replayProgress]}
                 onValueChange={([v]) => onProgressChange(v)}
@@ -138,12 +143,12 @@ export function GlobeControls({
               value={replaySpeed.toString()}
               onValueChange={(v) => onSpeedChange(Number(v))}
             >
-              <SelectTrigger className="w-16 h-8 border-gray-600 bg-transparent text-gray-300">
+              <SelectTrigger className="w-14 h-7 border-gray-600 bg-transparent text-gray-300 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-gray-700">
                 {SPEEDS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value.toString()}>
+                  <SelectItem key={value} value={value.toString()} className="text-xs">
                     {label}
                   </SelectItem>
                 ))}
@@ -152,20 +157,20 @@ export function GlobeControls({
           </div>
 
           {/* Divider */}
-          <div className="h-6 w-px bg-gray-600" />
+          <div className="h-5 w-px bg-gray-600" />
         </>
       )}
 
       {/* Live Indicator (only in live mode) */}
       {isLive && (
         <>
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Radio className="h-4 w-4 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-green-400 text-xs">
+            <Radio className="h-3 w-3 animate-pulse" />
             <span>Streaming Live</span>
           </div>
 
           {/* Divider */}
-          <div className="h-6 w-px bg-gray-600" />
+          <div className="h-5 w-px bg-gray-600" />
         </>
       )}
 
@@ -174,14 +179,47 @@ export function GlobeControls({
         variant="ghost"
         size="icon"
         onClick={onToggleMute}
-        className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
+        className="h-7 w-7 text-gray-400 hover:text-white hover:bg-gray-800"
       >
         {isMuted ? (
-          <VolumeX className="h-4 w-4" />
+          <VolumeX className="h-3 w-3" />
         ) : (
-          <Volume2 className="h-4 w-4" />
+          <Volume2 className="h-3 w-3" />
         )}
       </Button>
+
+      {/* Export Buttons */}
+      {(onExportCSV || onExportJSON) && (
+        <>
+          <div className="h-5 w-px bg-gray-600" />
+          <div className="flex items-center gap-1.5">
+            {onExportCSV && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExportCSV}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white gap-1.5 h-7 px-2 text-xs"
+                title="Export as CSV"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </Button>
+            )}
+            {onExportJSON && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExportJSON}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white gap-1.5 h-7 px-2 text-xs"
+                title="Export as JSON"
+              >
+                <Download className="h-3 w-3" />
+                JSON
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

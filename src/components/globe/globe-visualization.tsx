@@ -55,14 +55,18 @@ export function GlobeVisualization({
     // Only run on client side
     if (typeof window === "undefined" || !containerRef.current) return;
 
+    let isMounted = true;
+
     // Dynamically import globe.gl (it doesn't support SSR)
     import("globe.gl").then((GlobeModule) => {
+      if (!isMounted || !containerRef.current) return;
+      
       const Globe = GlobeModule.default;
 
       // If globe already exists, just update data
       if (globeRef.current) {
         globeRef.current
-          .pointsData(warehouses)
+          .htmlElementsData(warehouses)
           .arcsData(orders);
         return;
       }
@@ -80,37 +84,41 @@ export function GlobeVisualization({
         // Enable pointer interaction (touch on mobile)
         .enablePointerInteraction(true)
         
-        // Warehouse points (bright glowing markers) - the origin points
-        .pointsData(warehouses)
-        .pointLat((d: any) => d.lat)
-        .pointLng((d: any) => d.lng)
-        .pointColor(() => "#00d4ff")
-        .pointAltitude(0.02)
-        .pointRadius((d: any) => {
-          // Larger touch targets on mobile for easier interaction
-          const baseSize = mobile ? 0.6 : 0.3;
-          return baseSize + d.intensity * 0.4;
-        })
-        .pointLabel((d: any) => `
-          <div style="
-            color: #00d4ff;
-            font-weight: bold;
-            text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff;
-            background: rgba(0,0,0,0.7);
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(0,212,255,0.3);
-            cursor: pointer;
-          ">
-            📦 ${d.name}
-            <div style="font-size: 10px; color: #9ca3af; font-weight: normal;">Click for details</div>
-          </div>
-        `)
-        // Click handler for warehouse points
-        .onPointClick((point: any) => {
-          if (onWarehouseClickRef.current) {
-            onWarehouseClickRef.current(point as Warehouse);
-          }
+        // Warehouse points with custom HTML markers (pulse rings)
+        .htmlElementsData(warehouses)
+        .htmlLat((d: any) => d.lat)
+        .htmlLng((d: any) => d.lng)
+        .htmlAltitude(0)
+        .htmlElement((d: any) => {
+          const warehouse = d as Warehouse;
+          const el = document.createElement('div');
+          
+          // Determine pulse intensity based on warehouse activity
+          const intensity = warehouse.intensity > 80 ? 'high' : warehouse.intensity > 40 ? 'medium' : 'low';
+          
+          // Random delay for each warehouse (0-8 seconds) so they don't all pulse at once
+          const randomDelay = Math.random() * 8;
+          
+          el.className = `warehouse-marker pulse-${intensity}`;
+          el.style.cssText = 'cursor: pointer; width: 24px; height: 24px;';
+          el.innerHTML = `
+            <div class="pulse-ring" style="animation-delay: ${randomDelay}s"></div>
+            <div class="pulse-ring" style="animation-delay: ${randomDelay + 1}s"></div>
+            <div class="warehouse-dot"></div>
+          `;
+          
+          // Tooltip on hover
+          el.title = `${warehouse.name} - Click for details`;
+          
+          // Click handler
+          el.onclick = (e) => {
+            e.stopPropagation();
+            if (onWarehouseClickRef.current) {
+              onWarehouseClickRef.current(warehouse);
+            }
+          };
+          
+          return el;
         })
         
         // Order arcs (animated trails FROM warehouses TO destinations)
@@ -120,8 +128,26 @@ export function GlobeVisualization({
         .arcEndLat((d: any) => d.to.lat)
         .arcEndLng((d: any) => d.to.lng)
         .arcColor((d: any) => {
-          // Color-code arcs by product category
-          const colors = CATEGORY_COLORS[d.category] || DEFAULT_ARC_COLORS;
+          // Enhanced glow for high-value orders (value > 200)
+          const order = d as Order;
+          const colors = CATEGORY_COLORS[order.category] || DEFAULT_ARC_COLORS;
+          
+          if (order.value > 200) {
+            // High-value orders get extra white glow effect
+            return (t: number) => {
+              if (t < 0.3) {
+                return colors[0]; // Start with category color
+              } else if (t < 0.7) {
+                // Middle section gets bright white glow
+                const glowIntensity = Math.sin((t - 0.3) * Math.PI / 0.4);
+                return `rgba(255, 255, 255, ${glowIntensity * 0.9})`;
+              } else {
+                return colors[1]; // End with lighter category color
+              }
+            };
+          }
+          
+          // Regular gradient for normal orders
           return colors;
         })
         .arcAltitude((d: any) => {
@@ -134,7 +160,7 @@ export function GlobeVisualization({
         .arcStroke((d: any) => {
           // Thicker, more prominent arcs for high-value orders (glow effect)
           const isHighValue = d.value > 200;
-          return isHighValue ? (mobile ? 0.5 : 0.8) : (mobile ? 0.3 : 0.5);
+          return isHighValue ? (mobile ? 0.6 : 1.0) : (mobile ? 0.3 : 0.5);
         })
         .arcDashLength(0.9)
         .arcDashGap(4)
@@ -147,7 +173,7 @@ export function GlobeVisualization({
       // Set initial camera position to show US (centered on continental US)
       // Zoomed in closer so warehouses are easier to see and click
       // Latitude lowered to 35 to show more of America, less of Canada
-      const initialAltitude = mobile ? 1.3 : 1.0;
+      const initialAltitude = mobile ? 1.3 : 0.9;
       globe.pointOfView({ lat: 35, lng: -98.5, altitude: initialAltitude }, 0);
 
       // Configure controls
@@ -177,6 +203,7 @@ export function GlobeVisualization({
 
     // Cleanup on unmount
     return () => {
+      isMounted = false;
       if (globeRef.current) {
         // globe.gl doesn't have a proper dispose method, but we can clear the container
         if (containerRef.current) {

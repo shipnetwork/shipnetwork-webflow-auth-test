@@ -22,10 +22,10 @@ class SoundEngine {
   }
 
   /**
-   * Play a subtle beep sound when an order ships
-   * Uses Web Audio API to generate a pleasant, non-intrusive sound
+   * Play a category-specific sound when an order ships
+   * Different categories have different pitch/timbre
    */
-  playOrderShipSound() {
+  playOrderShipSound(category?: string) {
     if (this.isMuted) return;
 
     // Throttle sounds to avoid overlapping
@@ -42,6 +42,22 @@ class SoundEngine {
     }
 
     try {
+      // Category-specific frequencies and types
+      const categoryConfig: Record<string, { freq: number; type: OscillatorType }> = {
+        Electronics: { freq: 1200, type: "sine" }, // High-tech beep
+        Apparel: { freq: 700, type: "sine" }, // Fabric swoosh
+        "Home & Garden": { freq: 600, type: "triangle" }, // Natural tone
+        "Health & Beauty": { freq: 900, type: "sine" }, // Clean tone
+        "Sports & Outdoors": { freq: 800, type: "square" }, // Energetic
+        "Toys & Games": { freq: 1000, type: "sine" }, // Playful chime
+        "Food & Beverage": { freq: 850, type: "sine" }, // Cash register ding
+        "Office Supplies": { freq: 750, type: "sine" }, // Professional
+        "Pet Supplies": { freq: 950, type: "sine" }, // Friendly
+        Automotive: { freq: 650, type: "sawtooth" }, // Mechanical
+      };
+
+      const config = category && categoryConfig[category] || { freq: 880, type: "sine" as OscillatorType };
+
       // Create oscillator for the beep
       const oscillator = this.audioContext.createOscillator();
       const gainNode = this.audioContext.createGain();
@@ -50,19 +66,19 @@ class SoundEngine {
       oscillator.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
 
-      // Configure oscillator - subtle, pleasant frequency
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(880, this.audioContext.currentTime); // A5 note
+      // Configure oscillator
+      oscillator.type = config.type;
+      oscillator.frequency.setValueAtTime(config.freq, this.audioContext.currentTime);
 
       // Quick fade envelope for a soft "ping"
-      const now = this.audioContext.currentTime;
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(0.08, now + 0.01); // Soft attack
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Quick decay
+      const currentTime = this.audioContext.currentTime;
+      gainNode.gain.setValueAtTime(0, currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.08, currentTime + 0.01); // Soft attack
+      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.15); // Quick decay
 
       // Play the sound
-      oscillator.start(now);
-      oscillator.stop(now + 0.15);
+      oscillator.start(currentTime);
+      oscillator.stop(currentTime + 0.15);
     } catch (e) {
       // Silently fail if audio fails
     }
@@ -143,9 +159,86 @@ class SoundEngine {
   }
 
   /**
+   * Play delivery arrival sound (sparkle effect)
+   */
+  playDeliverySound(destination?: string) {
+    if (this.isMuted) return;
+
+    const now = Date.now();
+    if (now - this.lastPlayTime < this.minInterval) return;
+    this.lastPlayTime = now;
+
+    this.initAudioContext();
+    if (!this.audioContext) return;
+
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume();
+    }
+
+    try {
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      // Sparkle sound - higher pitch, quick decay
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(1400, this.audioContext.currentTime);
+
+      const currentTime = this.audioContext.currentTime;
+      gainNode.gain.setValueAtTime(0, currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.05, currentTime + 0.005);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.1);
+
+      oscillator.start(currentTime);
+      oscillator.stop(currentTime + 0.1);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  /**
+   * Play warehouse pulse sound (ambient)
+   */
+  playWarehousePulse(intensity: number) {
+    if (this.isMuted) return;
+
+    this.initAudioContext();
+    if (!this.audioContext) return;
+
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume();
+    }
+
+    try {
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      // Low ambient pulse
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+
+      const currentTime = this.audioContext.currentTime;
+      const volume = 0.02 * Math.min(intensity / 100, 1); // Scale with intensity
+      gainNode.gain.setValueAtTime(0, currentTime);
+      gainNode.gain.linearRampToValueAtTime(volume, currentTime + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.5);
+
+      oscillator.start(currentTime);
+      oscillator.stop(currentTime + 0.5);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  /**
    * Play a triumphant sound for milestone celebrations
    */
-  playMilestoneSound() {
+  playMilestoneSound(milestone?: number) {
     if (this.isMuted) return;
 
     this.initAudioContext();

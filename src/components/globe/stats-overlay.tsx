@@ -199,13 +199,8 @@ export const StatsOverlay = memo(function StatsOverlay({ stats, dailyGoal }: Sta
 
   return (
     <div className="absolute inset-0 pointer-events-none p-2 sm:p-4">
-      {/* Left Column - Orders, Daily Goal, Destinations, Categories */}
+      {/* Left Column - Daily Goal, Destinations, Categories */}
       <div className="absolute top-12 sm:top-16 left-2 sm:left-4 flex flex-col gap-2 max-h-[calc(100%-120px)] overflow-y-auto scrollbar-hide">
-        {/* Total Orders */}
-        <div className="pointer-events-auto">
-          <StatCard title="Total Orders" value={stats.totalOrders} icon={Package} />
-        </div>
-        
         {/* Daily Goal */}
         {dailyGoal && (
           <div className="pointer-events-auto">
@@ -254,8 +249,13 @@ export const StatsOverlay = memo(function StatsOverlay({ stats, dailyGoal }: Sta
         </div>
       </div>
 
-      {/* Right Column - Units */}
-      <div className="absolute top-12 sm:top-16 right-2 sm:right-4">
+      {/* Right Column - Orders, Units */}
+      <div className="absolute top-12 sm:top-16 right-2 sm:right-4 flex flex-col gap-2">
+        {/* Total Orders */}
+        <div className="pointer-events-auto">
+          <StatCard title="Total Orders" value={stats.totalOrders} icon={Package} />
+        </div>
+        
         {/* Total Units */}
         <div className="pointer-events-auto">
           <StatCard title="Total Units" value={stats.totalUnits} icon={Boxes} />

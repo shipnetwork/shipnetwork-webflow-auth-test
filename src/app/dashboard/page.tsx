@@ -11,7 +11,6 @@ const GlobeTracker = dynamic(
   () => import("@/components/globe/globe-tracker").then((mod) => mod.GlobeTracker),
   {
     ssr: false,
-    loading: () => import("@/components/globe/globe-skeleton").then((mod) => <mod.GlobeSkeleton />),
   }
 )
 

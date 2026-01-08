@@ -12,14 +12,21 @@ import { MilestoneCelebration } from "./milestone-celebration";
 import { FullscreenManager, FullscreenButtons, FullscreenMode } from "./fullscreen-manager";
 import { ScreenshotButton } from "./screenshot-button";
 import { KeyboardHelpModal } from "./keyboard-help-modal";
+import { ReportsModal } from "./reports-modal";
+import { MetricsPanel } from "./metrics-panel";
+import { DeliverySparkle, createSparkleForOrder, type SparkleEffect } from "./delivery-sparkle";
+import { DestinationHeatmap } from "./destination-heatmap";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { soundEngine } from "@/lib/sound-engine";
+import { Button } from "@/components/ui/button";
+import { BarChart3, Activity } from "lucide-react";
 import {
   effectsEngine,
   detectNewMilestone,
   calculateDailyGoal,
   type Milestone,
 } from "@/lib/effects-engine";
+import { exportCSV, exportJSON } from "@/lib/export-utils";
 import {
   generateOrder,
   calculateStats,
@@ -85,6 +92,10 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
   const [showTicker, setShowTicker] = useState(true);
   const [fullscreenMode, setFullscreenMode] = useState(FullscreenMode.None);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showMetricsPanel, setShowMetricsPanel] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
   
   // Milestone State
   const [reachedMilestones, setReachedMilestones] = useState<Milestone[]>([]);
@@ -182,9 +193,17 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
         if (newOrder.value > 500) {
           soundEngine.playHighValueOrderSound();
         } else {
-          soundEngine.playOrderShipSound();
+          soundEngine.playOrderShipSound(newOrder.category);
         }
       }
+
+      // Sparkle effects disabled - too distracting
+      // Play delivery sound on arrival
+      setTimeout(() => {
+        if (!isMuted) {
+          soundEngine.playDeliverySound(newOrder.to.city);
+        }
+      }, 3000);
 
       setActiveOrders((prev) => {
         const updated = [...prev, newOrder];
@@ -291,6 +310,16 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
     soundEngine.setMuted(newMuted);
   }, [isMuted]);
 
+  const handleExportCSV = useCallback(() => {
+    const ordersToExport = mode === "live" ? orderHistory : replayData.slice(0, replayIndexRef.current + 1);
+    exportCSV(ordersToExport, stats);
+  }, [mode, orderHistory, replayData, stats]);
+
+  const handleExportJSON = useCallback(() => {
+    const ordersToExport = mode === "live" ? orderHistory : replayData.slice(0, replayIndexRef.current + 1);
+    exportJSON(ordersToExport, stats);
+  }, [mode, orderHistory, replayData, stats]);
+
   const handleWarehouseClick = useCallback((warehouse: Warehouse) => setSelectedWarehouse(warehouse), []);
   const handleCloseModal = useCallback(() => setSelectedWarehouse(null), []);
   const handleMilestoneComplete = useCallback(() => setCurrentMilestone(null), []);
@@ -371,10 +400,49 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
             onReset={handleReset}
             isMuted={isMuted}
             onToggleMute={handleToggleMute}
+            onExportCSV={handleExportCSV}
+            onExportJSON={handleExportJSON}
           />
           
           <div className="flex items-center gap-2">
             <FilterControls filters={filters} onFiltersChange={setFilters} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReportsModal(true)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white gap-2"
+              title="View Analytics Reports"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Reports
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMetricsPanel((prev) => !prev)}
+              className={`border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white gap-2 ${
+                showMetricsPanel ? "bg-cyan-600 text-white" : ""
+              }`}
+              title="Toggle Performance Metrics"
+            >
+              <Activity className="h-4 w-4" />
+              Metrics
+            </Button>
+            {/* Heatmap button temporarily hidden - alignment issues with 3D globe */}
+            {/* <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHeatmap((prev) => !prev)}
+              className={`border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white gap-2 ${
+                showHeatmap ? "bg-orange-600 text-white" : ""
+              }`}
+              title="Toggle Destination Heatmap"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              Heatmap
+            </Button> */}
             <ScreenshotButton targetRef={containerRef as React.RefObject<HTMLElement>} />
             <FullscreenButtons
               onEnterManual={() => handleEnterFullscreen(FullscreenMode.Manual)}
@@ -394,6 +462,14 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
             height={dimensions.height}
             onWarehouseClick={handleWarehouseClick}
           />
+
+          {/* Visual Effects */}
+          {/* Sparkle effects removed - too distracting */}
+          {/* Heatmap temporarily disabled - alignment issues with 3D globe */}
+          {/* <DestinationHeatmap orders={orderHistory} enabled={showHeatmap} /> */}
+
+          {/* Performance Metrics Panel */}
+          {showMetricsPanel && <MetricsPanel orders={orderHistory} warehouses={warehouses} />}
 
           <StatsOverlay stats={stats} dailyGoal={dailyGoal} />
 
@@ -425,9 +501,16 @@ export function GlobeTracker({ className }: GlobeTrackerProps) {
 
         <KeyboardHelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
 
+        <ReportsModal
+          isOpen={showReportsModal}
+          onClose={() => setShowReportsModal(false)}
+          orders={orderHistory}
+        />
+
         {/* Milestone Celebration */}
         <MilestoneCelebration milestone={currentMilestone} onComplete={handleMilestoneComplete} />
       </div>
     </FullscreenManager>
   );
 }
+
