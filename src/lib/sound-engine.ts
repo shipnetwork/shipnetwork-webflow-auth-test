@@ -279,46 +279,6 @@ class SoundEngine {
       // Silently fail
     }
   }
-
-  /**
-   * Play a soft delivery completion sound
-   */
-  playDeliverySound() {
-    if (this.isMuted) return;
-
-    const now = Date.now();
-    if (now - this.lastPlayTime < 50) return; // Shorter throttle for delivery
-    this.lastPlayTime = now;
-
-    this.initAudioContext();
-    if (!this.audioContext) return;
-
-    if (this.audioContext.state === "suspended") {
-      this.audioContext.resume();
-    }
-
-    try {
-      const osc = this.audioContext.createOscillator();
-      const gain = this.audioContext.createGain();
-      
-      osc.connect(gain);
-      gain.connect(this.audioContext.destination);
-      
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1200, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, this.audioContext.currentTime + 0.1);
-      
-      const now = this.audioContext.currentTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.05, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-      
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } catch (e) {
-      // Silently fail
-    }
-  }
 }
 
 // Singleton instance
